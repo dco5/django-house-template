@@ -24,7 +24,7 @@ ENV DJANGO_SETTINGS_MODULE=config.settings.production \
 {% if css == "tailwind" %}
 RUN cd src && uv run --no-dev python manage.py tailwind build
 {% endif %}
-RUN cd src && uv run --no-dev python manage.py collectstatic --noinput
+RUN cd src && uv run --no-dev python manage.py collectstatic --noinput{% if css == "tailwind" %} --ignore=source.css{% endif %}
 
 FROM python:3.13-slim
 

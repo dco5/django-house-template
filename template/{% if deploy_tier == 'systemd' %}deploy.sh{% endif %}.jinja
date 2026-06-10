@@ -31,7 +31,10 @@ fi
 
 cd src
 DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py migrate
-DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py collectstatic --noinput
+{% if css == "tailwind" %}DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py tailwind build
+# --ignore: the Tailwind source file must not be collected — manifest post-processing
+# cannot resolve its @import "tailwindcss" statement
+DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py collectstatic --noinput --ignore=source.css{% else %}DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py collectstatic --noinput{% endif %}
 cd ..
 
 cat > /etc/systemd/system/$SERVICE.service <<EOF
