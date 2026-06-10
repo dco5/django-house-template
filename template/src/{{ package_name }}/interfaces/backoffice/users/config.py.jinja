@@ -1,0 +1,9 @@
+from django.apps import AppConfig
+
+
+class UsersBackofficeConfig(AppConfig):
+    name = "{{ package_name }}.interfaces.backoffice.users"
+    label = "users_backoffice"
+
+    def ready(self) -> None:
+        from . import admin  # noqa: F401

@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+import factory
+
+from {{ package_name }}.data.users.models import User
+
+
+class UserFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = User
+        django_get_or_create = ("username",)
+
+    username = factory.Sequence(lambda n: f"user{n}")
+    email = factory.LazyAttribute(lambda o: f"{o.username}@example.com")
+    first_name = factory.Faker("first_name", locale="es_CO")
+    last_name = factory.Faker("last_name", locale="es_CO")
+    password = factory.django.Password("testpass123!")

@@ -1,0 +1,65 @@
+services:
+{% if database == "postgres" %}  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: {{ package_name }}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: {{ package_name }}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ package_name }}"]
+      interval: 10s
+      retries: 5
+
+{% endif %}{% if use_celery %}  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+{% endif %}  web:
+    build: .
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    ports:
+      - "8000:8000"
+    volumes:
+      - media:/code/src/media
+    restart: unless-stopped
+{% if database == "postgres" %}    depends_on:
+      db:
+        condition: service_healthy
+{% endif %}    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz/"]
+      interval: 30s
+      retries: 3
+
+{% if use_celery %}  celery-worker:
+    build: .
+    command: celery -A config worker -l info
+    working_dir: /code/src
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    volumes:
+      - media:/code/src/media
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    working_dir: /code/src
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+{% endif %}volumes:
+  media:
+{% if database == "postgres" %}  pgdata:
+{% endif %}

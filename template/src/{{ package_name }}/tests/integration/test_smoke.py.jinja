@@ -1,0 +1,53 @@
+from __future__ import annotations
+
+import pytest
+from django.urls import reverse
+
+from {{ package_name }}.data.common.constants import ActionSource
+from {{ package_name }}.domain.auditlog import operations as auditlog_ops
+from {{ package_name }}.domain.users import queries as user_queries
+
+pytestmark = pytest.mark.integration
+
+
+@pytest.mark.django_db
+def test_healthz(client):
+    response = client.get(reverse("healthz"))
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_portal_requires_login(client):
+    response = client.get(reverse("portal:dashboard"))
+    assert response.status_code == 302
+    assert "/portal/login/" in response.url
+
+
+@pytest.mark.django_db
+def test_portal_login_flow(client, user):
+    response = client.post(
+        reverse("portal:login"),
+        {"username": user.username, "password": "testpass123!"},
+    )
+    assert response.status_code == 302
+    response = client.get(reverse("portal:dashboard"))
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_audit_log_records_writes(user):
+    log = auditlog_ops.record_audit(
+        action="user.created",
+        object_type="User",
+        object_id=str(user.pk),
+        performed_by=user,
+        action_source=ActionSource.SYSTEM,
+        changes={"username": user.username},
+    )
+    assert log.pk is not None
+    assert log.action_source == ActionSource.SYSTEM
+
+
+@pytest.mark.django_db
+def test_active_users_query(user):
+    assert user in user_queries.get_active_users()

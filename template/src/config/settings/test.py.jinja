@@ -1,0 +1,20 @@
+from config.settings.base import *  # noqa: F403
+
+DEBUG = False
+SECRET_KEY = "test-secret-key-not-for-production-use-only-for-the-test-suite"  # noqa: S105
+ALLOWED_HOSTS = ["testserver"]
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
+    }
+}
+
+PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+{% if use_celery %}
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+{% endif %}
+LOGGING = {"version": 1, "disable_existing_loggers": True}

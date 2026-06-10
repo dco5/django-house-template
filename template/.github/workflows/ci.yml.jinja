@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+{% if database == "postgres" %}    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: {{ package_name }}
+          POSTGRES_PASSWORD: {{ package_name }}
+          POSTGRES_DB: {{ package_name }}
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+{% endif %}    env:
+      SECRET_KEY: ci-secret-key-not-for-production-use-at-least-50-characters-long
+{% if database == "postgres" %}      DATABASE_URL: postgres://{{ package_name }}:{{ package_name }}@localhost:5432/{{ package_name }}
+{% endif %}    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked --all-groups
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src/ || true  # advisory until the codebase is fully typed
+      - name: Check for missing migrations
+        run: cd src && uv run python manage.py makemigrations --check --dry-run
+      - name: Django deploy checks
+        run: cd src && DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py check
+      - run: uv run pytest -m "not e2e"

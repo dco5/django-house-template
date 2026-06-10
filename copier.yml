@@ -1,0 +1,89 @@
+# django-house-template — Copier template for the house Django architecture.
+# Docs: thoughts/shared/handbook/django-architecture-handbook.md (researchs repo)
+_min_copier_version: "9.0.0"
+_subdirectory: template
+
+project_name:
+  type: str
+  help: Human-readable project name (e.g. "Por Ti Servicios")
+
+project_slug:
+  type: str
+  help: Repo / deploy slug (kebab-case)
+  default: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') }}"
+
+package_name:
+  type: str
+  help: Python package name (snake_case)
+  default: "{{ project_slug | replace('-', '_') }}"
+
+description:
+  type: str
+  help: One-line project description
+  default: "{{ project_name }} — Django application"
+
+author_name:
+  type: str
+  default: Jaime Lossada
+
+author_email:
+  type: str
+  default: jaimelossada87@gmail.com
+
+language_code:
+  type: str
+  help: Django LANGUAGE_CODE
+  default: es-co
+
+timezone:
+  type: str
+  help: Django TIME_ZONE
+  default: America/Bogota
+
+database:
+  type: str
+  help: Primary database
+  choices:
+    PostgreSQL (recommended): postgres
+    SQLite (single-tenant MVP): sqlite
+  default: postgres
+
+use_celery:
+  type: bool
+  help: Celery + Redis + django-celery-beat for background work?
+  default: false
+
+use_api:
+  type: bool
+  help: django-ninja API under /api/v1/?
+  default: true
+
+css:
+  type: str
+  help: CSS approach
+  choices:
+    Tailwind + DaisyUI (django-tailwind-cli): tailwind
+    Plain CSS: plain
+  default: tailwind
+
+use_sentry:
+  type: bool
+  help: Wire Sentry into production settings?
+  default: true
+
+deploy_tier:
+  type: str
+  help: Deployment tier
+  choices:
+    Docker compose + fabfile (house default): docker
+    VPS systemd + gunicorn + nginx (deploy.sh): systemd
+  default: docker
+
+_tasks:
+  # Vendor pinned frontend libs (best-effort; rerun manually if offline)
+  - command: >-
+      curl -fsSL https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js
+      -o src/assets/js/vendor/htmx.min.js || echo "WARN: htmx download failed"
+  - command: >-
+      curl -fsSL https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js
+      -o src/assets/js/vendor/alpine.min.js || echo "WARN: alpine download failed"

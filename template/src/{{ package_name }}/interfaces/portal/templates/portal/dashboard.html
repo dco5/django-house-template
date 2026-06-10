@@ -1,0 +1,12 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1>Hola, {{ request.user.get_username }}</h1>
+<p>Portal listo. Construye tu primer bounded context (data → domain → interfaces).</p>
+<form method="post" action="{% url 'portal:logout' %}">
+    {% csrf_token %}
+    <button type="submit">Cerrar sesión</button>
+</form>
+{% endblock %}

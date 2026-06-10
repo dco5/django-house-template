@@ -1,0 +1,57 @@
+"""Deployment tasks (house pattern: fab deploy / status / logs / restart / rollback).
+
+Configure via environment variables or a .env file:
+  DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH (e.g. /opt/{{ project_slug }})
+"""
+
+from __future__ import annotations
+
+import os
+
+from fabric import Connection, task
+
+HOST = os.environ.get("DEPLOY_HOST", "")
+USER = os.environ.get("DEPLOY_USER", "")
+PATH = os.environ.get("DEPLOY_PATH", "/opt/{{ project_slug }}")
+COMPOSE = "docker compose -f docker-compose.prod.yml"
+
+
+def _conn() -> Connection:
+    if not HOST or not USER:
+        msg = "Set DEPLOY_HOST and DEPLOY_USER"
+        raise RuntimeError(msg)
+    return Connection(host=HOST, user=USER)
+
+
+@task
+def deploy(c, branch="main"):  # noqa: ANN001, ANN201
+    conn = _conn()
+    with conn.cd(PATH):
+        conn.run(f"git fetch && git checkout {branch} && git pull")
+        conn.run(f"{COMPOSE} build")
+        conn.run(f"{COMPOSE} up -d")
+        conn.run(f"{COMPOSE} exec -T web python manage.py migrate")
+
+
+@task
+def status(c):  # noqa: ANN001, ANN201
+    with _conn().cd(PATH) as _:
+        _conn().run(f"cd {PATH} && {COMPOSE} ps")
+
+
+@task
+def logs(c, service="web", lines="100"):  # noqa: ANN001, ANN201
+    _conn().run(f"cd {PATH} && {COMPOSE} logs --tail {lines} -f {service}", pty=True)
+
+
+@task
+def restart(c):  # noqa: ANN001, ANN201
+    _conn().run(f"cd {PATH} && {COMPOSE} restart")
+
+
+@task
+def rollback(c):  # noqa: ANN001, ANN201
+    conn = _conn()
+    with conn.cd(PATH):
+        conn.run("git reset --hard HEAD~1")
+        conn.run(f"{COMPOSE} build && {COMPOSE} up -d")

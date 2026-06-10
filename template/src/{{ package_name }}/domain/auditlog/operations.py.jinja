@@ -1,0 +1,28 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from {{ package_name }}.data.auditlog.models import AuditLog
+
+if TYPE_CHECKING:
+    from {{ package_name }}.data.users.models import User
+
+
+def record_audit(
+    *,
+    action: str,
+    object_type: str,
+    object_id: str,
+    performed_by: User | None,
+    action_source: str,
+    changes: dict[str, Any] | None = None,
+) -> AuditLog:
+    """Call from inside the same transaction as the write being audited."""
+    return AuditLog.objects.create(
+        action=action,
+        actor=performed_by,
+        action_source=action_source,
+        object_type=object_type,
+        object_id=object_id,
+        changes=changes or {},
+    )

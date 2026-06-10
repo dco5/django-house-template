@@ -1,0 +1,33 @@
+from config.settings.base import *  # noqa: F403
+from config.settings.base import BASE_DIR, INSTALLED_APPS, MIDDLEWARE, env
+
+DEBUG = True
+SECRET_KEY = env("SECRET_KEY", default="insecure-local-dev-key-do-not-use-in-production-ever")
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+INTERNAL_IPS = ["127.0.0.1"]
+
+{% if database == "postgres" %}DATABASES = {
+    "default": env.db(
+        "DATABASE_URL",
+        default="postgres://{{ package_name }}:{{ package_name }}@localhost:5432/{{ package_name }}",
+    )
+}
+{% else %}DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / env("DATABASE_PATH", default="db.sqlite3"),
+    }
+}
+{% endif %}
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+try:
+    import debug_toolbar  # noqa: F401
+
+    INSTALLED_APPS += ["debug_toolbar", "django_browser_reload"]
+    MIDDLEWARE += [
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+        "django_browser_reload.middleware.BrowserReloadMiddleware",
+    ]
+except ImportError:
+    pass

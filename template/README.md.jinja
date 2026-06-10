@@ -1,0 +1,41 @@
+# {{ project_name }}
+
+{{ description }}
+
+Generated from [django-house-template](https://github.com/jaimelossada/django-house-template). Architecture rules live in `CLAUDE.md`.
+
+## Quick start
+
+```bash
+uv sync
+cp .env.example .env          # fill SECRET_KEY
+{% if database == "postgres" %}# start postgres (e.g. docker compose up -d db)
+{% endif %}cd src
+uv run python manage.py migrate
+uv run python manage.py createsuperuser
+uv run python manage.py runserver
+```
+
+Portal: http://localhost:8000/portal/ — Admin: http://localhost:8000/admin/{% if use_api %} — API docs: http://localhost:8000/api/v1/docs{% endif %}
+
+## Commands
+
+| Task | Command |
+|---|---|
+| Dev server | `make run` |
+| Tests | `make test` (fast) / `make test-all` |
+| Lint / format | `make lint` / `make format` |
+| Types | `make typecheck` |
+| Migrations | `make makemigrations && make migrate` |
+{% if use_celery %}| Celery | `make celery` / `make celery-beat` |
+{% endif %}{% if css == "tailwind" %}| Tailwind watch | `make tailwind` |
+{% endif %}
+
+## Architecture
+
+`data/` (models) → `domain/` (operations / queries / processes) → `interfaces/` (portal / api / backoffice{% if use_celery %} / tasks{% endif %}).
+Layering is enforced by ruff — see `CLAUDE.md` for the full rules.
+
+## Deploy
+
+{% if deploy_tier == "docker" %}Docker compose + Fabric: `fab deploy` (see `fabfile.py`; configure host via env vars `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH`).{% else %}VPS systemd + gunicorn + nginx: edit the variables at the top of `deploy.sh` and run it on the server.{% endif %}

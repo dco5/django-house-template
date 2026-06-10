@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# VPS deployment: uv + gunicorn (unix socket) + systemd + nginx + certbot.
+# House pattern from por-ti-web. Run ON the server as root, after cloning the repo.
+set -euo pipefail
+
+# ── Customize ────────────────────────────────────────────────────────────────
+DOMAIN="{{ project_slug }}.com"
+EMAIL="{{ author_email }}"
+APP_DIR="/opt/{{ project_slug }}"
+SERVICE="{{ project_slug }}"
+# ─────────────────────────────────────────────────────────────────────────────
+
+apt-get update && apt-get install -y nginx certbot curl
+
+command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+
+cd "$APP_DIR"
+uv sync --locked --no-dev
+
+if [ ! -f .env ]; then
+  SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
+  cat > .env <<EOF
+SECRET_KEY=$SECRET
+DEBUG=False
+ALLOWED_HOSTS=$DOMAIN
+CSRF_TRUSTED_ORIGINS=https://$DOMAIN
+EOF
+fi
+
+cd src
+DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py migrate
+DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py collectstatic --noinput
+cd ..
+
+cat > /etc/systemd/system/$SERVICE.service <<EOF
+[Unit]
+Description={{ project_name }}
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=$APP_DIR/src
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+ExecStart=$APP_DIR/.venv/bin/gunicorn config.wsgi:application \
+  --workers 3 --bind unix:$APP_DIR/$SERVICE.sock
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl stop nginx || true
+certbot certonly --standalone -d "$DOMAIN" --non-interactive --agree-tos -m "$EMAIL" || true
+
+cat > /etc/nginx/sites-available/$SERVICE <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name $DOMAIN;
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    client_max_body_size 10M;
+
+    location /static/ { alias $APP_DIR/src/staticfiles/; }
+    location /media/  { alias $APP_DIR/src/media/; }
+    location / {
+        proxy_pass http://unix:$APP_DIR/$SERVICE.sock;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}
+EOF
+
+ln -sf /etc/nginx/sites-available/$SERVICE /etc/nginx/sites-enabled/
+chown -R www-data:www-data "$APP_DIR"
+systemctl daemon-reload
+systemctl enable --now $SERVICE
+systemctl restart nginx
+
+(crontab -l 2>/dev/null | grep -v certbot; echo "0 3 * * * certbot renew --quiet") | crontab -
+
+echo "Deployed: https://$DOMAIN"

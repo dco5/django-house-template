@@ -1,0 +1,9 @@
+from __future__ import annotations
+
+from django.db.models import QuerySet
+
+from {{ package_name }}.data.users.models import User
+
+
+def get_active_users() -> QuerySet[User]:
+    return User.objects.filter(is_active=True)

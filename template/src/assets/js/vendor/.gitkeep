@@ -1,0 +1,4 @@
+# htmx.min.js and alpine.min.js are downloaded here by the copier post-generation task.
+# If the download failed (offline), fetch them manually:
+#   curl -fsSL https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js -o htmx.min.js
+#   curl -fsSL https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js -o alpine.min.js

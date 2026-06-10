@@ -1,0 +1,15 @@
+from __future__ import annotations
+
+import pytest
+
+from {{ package_name }}.tests.factories.core import UserFactory
+
+
+@pytest.fixture
+def user(db):  # noqa: ANN001, ANN201
+    return UserFactory()
+
+
+@pytest.fixture
+def admin_user(db):  # noqa: ANN001, ANN201
+    return UserFactory(is_staff=True, is_superuser=True)

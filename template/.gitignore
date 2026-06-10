@@ -1,0 +1,15 @@
+.env
+*.pyc
+__pycache__/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+db.sqlite3
+src/media/
+src/staticfiles/
+src/.django_tailwind_cli/
+.DS_Store
+analysis/

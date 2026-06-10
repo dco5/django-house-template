@@ -1,0 +1,24 @@
+{% raw %}<!DOCTYPE html>
+{% load static %}{% endraw %}{% if css == "tailwind" %}{% raw %}{% load tailwind_cli %}{% endraw %}{% endif %}{% raw %}
+<html lang="es" data-theme="corporate">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endraw %}{{ project_name }}{% raw %}{% endblock %}</title>
+{% endraw %}{% if css == "tailwind" %}{% raw %}    {% tailwind_css %}
+{% endraw %}{% else %}{% raw %}    <link rel="stylesheet" href="{% static 'css/portal.css' %}">
+{% endraw %}{% endif %}{% raw %}    <script src="{% static 'js/vendor/htmx.min.js' %}" defer></script>
+    <script src="{% static 'js/vendor/alpine.min.js' %}" defer></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <main class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
+{% endraw %}

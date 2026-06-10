@@ -1,0 +1,44 @@
+.PHONY: run migrate makemigrations shell test test-all lint format check typecheck{% if use_celery %} celery celery-beat{% endif %}{% if css == "tailwind" %} tailwind{% endif %}
+
+run:
+	cd src && uv run python manage.py runserver
+
+migrate:
+	cd src && uv run python manage.py migrate
+
+makemigrations:
+	cd src && uv run python manage.py makemigrations
+
+shell:
+	cd src && uv run python manage.py shell
+
+test:
+	uv run pytest -m "not e2e"
+
+test-all:
+	uv run pytest
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .
+
+check:
+	cd src && uv run python manage.py check
+
+typecheck:
+	uv run mypy src/
+{% if use_celery %}
+
+celery:
+	cd src && uv run celery -A config worker -l info
+
+celery-beat:
+	cd src && uv run celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+{% endif %}
+{% if css == "tailwind" %}
+
+tailwind:
+	cd src && uv run python manage.py tailwind watch
+{% endif %}

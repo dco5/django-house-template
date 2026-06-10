@@ -1,0 +1,88 @@
+[project]
+name = "{{ package_name }}"
+version = "0.1.0"
+description = "{{ description }}"
+authors = [{ name = "{{ author_name }}", email = "{{ author_email }}" }]
+requires-python = ">=3.13"
+dependencies = [
+    "django>=6.0,<6.1",
+    "django-environ>=0.12",
+    "django-htmx>=1.27",
+    "whitenoise>=6.8",
+    "argon2-cffi>=23.1",
+    "gunicorn>=23.0",
+{% if database == "postgres" %}
+    "psycopg[binary]>=3.2",
+{% endif %}
+{% if use_api %}
+    "django-ninja>=1.4",
+{% endif %}
+{% if use_celery %}
+    "celery[redis]>=5.6",
+    "django-celery-beat>=2.9",
+    "redis>=5.0",
+{% endif %}
+{% if css == "tailwind" %}
+    "django-tailwind-cli>=4.5",
+{% endif %}
+{% if use_sentry %}
+    "sentry-sdk>=2.0",
+{% endif %}
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11",
+    "mypy>=1.14",
+    "django-stubs[compatible-mypy]>=5.1",
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "pytest-cov>=6.0",
+    "factory-boy>=3.3",
+    "django-debug-toolbar>=5.0",
+    "django-browser-reload>=1.18",
+    "pre-commit>=4.0",
+{% if deploy_tier == "docker" %}
+    "fabric>=3.2",
+{% endif %}
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+extend-exclude = ["**/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "TID", "DJ"]
+
+# Layered architecture enforcement — violations fail lint, not code review.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"{{ package_name }}.domain".msg = "data/ must not import domain/ (layering violation)"
+"{{ package_name }}.interfaces".msg = "data/ and domain/ must not import interfaces/ (layering violation)"
+
+[tool.ruff.lint.per-file-ignores]
+"src/{{ package_name }}/domain/**" = ["TID251"]
+"src/{{ package_name }}/interfaces/**" = ["TID251"]
+"src/{{ package_name }}/contrib/**" = ["TID251"]
+"src/{{ package_name }}/tests/**" = ["TID251"]
+"src/config/**" = ["TID251"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+pythonpath = ["src"]
+testpaths = ["src/{{ package_name }}/tests"]
+addopts = "--cov=src/{{ package_name }}/domain --cov=src/{{ package_name }}/data --cov-report=term-missing"
+markers = [
+    "unit: pure logic, no DB",
+    "integration: requires DB",
+    "e2e: browser tests (excluded by default)",
+]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "src"
+exclude = ["migrations"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
