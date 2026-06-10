@@ -87,3 +87,5 @@ _tasks:
   - command: >-
       curl -fsSL https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js
       -o src/assets/js/vendor/alpine.min.js || echo "WARN: alpine download failed"
+  # Normalize whitespace left by template conditionals
+  - command: uvx ruff check --fix-only -q . && uvx ruff format -q . || echo "WARN: ruff cleanup skipped"

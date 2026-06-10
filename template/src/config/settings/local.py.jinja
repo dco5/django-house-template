@@ -1,5 +1,5 @@
 from config.settings.base import *  # noqa: F403
-from config.settings.base import BASE_DIR, INSTALLED_APPS, MIDDLEWARE, env
+from config.settings.base import {% if database == "sqlite" %}BASE_DIR, {% endif %}INSTALLED_APPS, MIDDLEWARE, env
 
 DEBUG = True
 SECRET_KEY = env("SECRET_KEY", default="insecure-local-dev-key-do-not-use-in-production-ever")

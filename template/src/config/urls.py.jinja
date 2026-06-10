@@ -7,7 +7,6 @@ from django.urls import include, path
 {% if use_api %}from {{ package_name }}.interfaces.api.api import api
 
 {% endif %}
-
 def healthz(request: HttpRequest) -> JsonResponse:
     from django.db import connection
 
