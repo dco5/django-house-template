@@ -9,7 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent  # src/
 env = environ.Env()
 environ.Env.read_env(BASE_DIR.parent / ".env")
 
-SECRET_KEY = env("SECRET_KEY")
+# Empty default so dev/test work without .env; production.py fail-fast validates length.
+SECRET_KEY = env("SECRET_KEY", default="")
 DEBUG = False
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
@@ -64,7 +65,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-{% if database == "postgres" %}DATABASES = {"default": env.db("DATABASE_URL")}
+{% if database == "postgres" %}DATABASES = {
+    "default": env.db(
+        "DATABASE_URL",
+        default="postgres://{{ package_name }}:{{ package_name }}@localhost:5432/{{ package_name }}",
+    )
+}
 {% else %}DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
