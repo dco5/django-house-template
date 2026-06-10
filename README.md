@@ -22,7 +22,7 @@ Copier template encoding the house Django architecture distilled from three prod
 ## Usage
 
 ```bash
-uvx copier copy gh:jaimelossada/django-house-template myproject
+uvx copier copy gh:dco5/django-house-template myproject
 cd myproject
 uv sync
 cp .env.example .env   # then fill SECRET_KEY
