@@ -7,12 +7,12 @@ All Python commands run via `uv run`, Django commands from `src/`:
 - Dev server: `cd src && uv run python manage.py runserver`
 - Migrations: `cd src && uv run python manage.py makemigrations && uv run python manage.py migrate`
 - Tests: `uv run pytest` (fast suite; e2e excluded by marker)
-- Lint: `uv run ruff check .` — Format: `uv run ruff format .`
+- Lint: `make lint` (ruff + import-linter layering contract) — Format: `uv run ruff format .`
 - Types: `uv run mypy src/`
 {% if use_celery %}- Celery: `cd src && uv run celery -A config worker -l info`
 {% endif %}
 
-## Architecture (enforced by ruff TID251 — violations fail lint)
+## Architecture (enforced — violations fail `make lint`: ruff TID251 flags upward imports from data/ in-editor; import-linter checks the full layers contract)
 
 ```
 interfaces/   (portal, api, backoffice{% if use_celery %}, tasks{% endif %})  → may import everything
@@ -22,6 +22,7 @@ data/         (models, constants, fields)                     → imports NOTHIN
 
 ### data/ — models are data containers
 - Every model extends `{{ package_name }}.data.common.models.BaseModel` (UUID pk, created_at, updated_at).
+  Exception: `User` extends `AbstractUser` directly (Django convention) — do not "fix" this.
 - Enums as `TextChoices` in `constants.py` per app. No abbreviations. Spanish labels for user-facing text.
 - NO business logic in models, NO signals, NO `save()` overrides for business rules.
 - Custom User model: `{{ package_name }}.data.users.models.User` (`AUTH_USER_MODEL = "users.User"`).
@@ -41,8 +42,9 @@ data/         (models, constants, fields)                     → imports NOTHIN
 - Portal auth: `@portal_login_required` decorator (separate from admin auth).
 - HTMX: partial responses via Django 6.0 template partials (`{% raw %}{% partialdef %}{% endraw %}` /
   `render(request, "page.html#fragment")`). Form validation errors → 422.
-- Admin classes live in `interfaces/backoffice/<context>/admin.py` (autodiscovered via
-  `{{ package_name }}.contrib.admin`) — NEVER in data apps.
+- Admin classes live in `interfaces/backoffice/<context>/admin.py` — NEVER in data apps.
+  `BackofficeConfig.ready()` autodiscovers them: a new context is just a package under
+  `backoffice/` with an `admin.py`; no INSTALLED_APPS entry needed.
 {% if use_api %}- API: django-ninja routers in `interfaces/api/`, Bearer token auth, catch domain exceptions → `HttpError`.
 {% endif %}{% if use_celery %}- Celery tasks: thin wrappers in `interfaces/tasks/` calling domain ops. Idempotent, `acks_late`, time limits.
 {% endif %}
@@ -55,5 +57,5 @@ data/         (models, constants, fields)                     → imports NOTHIN
 - Tests: pytest markers `unit` (no DB) / `integration` (DB). Factories in `tests/factories/`. Never stash failing tests — fix immediately.
 
 ## Session end ("landing the plane")
-1. Run quality gates: `uv run pytest && uv run ruff check .`
+1. Run quality gates: `uv run pytest && make lint`
 2. Commit, then `git pull --rebase && git push` — work is NOT done until push succeeds.

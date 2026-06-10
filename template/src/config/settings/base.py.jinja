@@ -31,11 +31,13 @@ INSTALLED_APPS = [
     "{{ package_name }}.data.auditlog",
     # interfaces layer
     "{{ package_name }}.interfaces.portal",
-    "{{ package_name }}.interfaces.backoffice.users.config.UsersBackofficeConfig",
+    "{{ package_name }}.interfaces.backoffice",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Emits Content-Security-Policy only where SECURE_CSP is set (production.py)
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -112,9 +114,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Portal auth (separate from admin auth)
 PORTAL_LOGIN_URL = "/portal/login/"
 LOGIN_URL = PORTAL_LOGIN_URL
-
-# Admin autodiscovery root ({{ package_name }}.contrib.admin)
-ADMIN_INTERFACES = "{{ package_name }}.interfaces.backoffice"
 {% if css == "tailwind" %}
 TAILWIND_CLI_SRC_CSS = BASE_DIR / "assets" / "css" / "source.css"
 TAILWIND_CLI_DIST_CSS = "css/tailwind.css"

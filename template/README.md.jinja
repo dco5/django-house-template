@@ -34,7 +34,7 @@ Portal: http://localhost:8000/portal/ — Admin: http://localhost:8000/admin/{% 
 ## Architecture
 
 `data/` (models) → `domain/` (operations / queries / processes) → `interfaces/` (portal / api / backoffice{% if use_celery %} / tasks{% endif %}).
-Layering is enforced by ruff — see `CLAUDE.md` for the full rules.
+Layering is enforced by ruff + import-linter (`make lint`) — see `CLAUDE.md` for the full rules.
 
 ## Deploy
 

@@ -20,12 +20,13 @@ uv sync --locked --no-dev
 
 if [ ! -f .env ]; then
   SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
-  cat > .env <<EOF
+{% if use_api %}  API_TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+{% endif %}  cat > .env <<EOF
 SECRET_KEY=$SECRET
-DEBUG=False
 ALLOWED_HOSTS=$DOMAIN
 CSRF_TRUSTED_ORIGINS=https://$DOMAIN
-EOF
+{% if use_api %}INTERNAL_API_TOKEN=$API_TOKEN
+{% endif %}EOF
 fi
 
 cd src
@@ -84,6 +85,7 @@ systemctl daemon-reload
 systemctl enable --now $SERVICE
 systemctl restart nginx
 
-(crontab -l 2>/dev/null | grep -v certbot; echo "0 3 * * * certbot renew --quiet") | crontab -
+# Standalone authenticator needs :80 free, so stop nginx around renewals.
+(crontab -l 2>/dev/null | grep -v certbot; echo "0 3 * * * certbot renew --quiet --pre-hook 'systemctl stop nginx' --post-hook 'systemctl start nginx'") | crontab -
 
 echo "Deployed: https://$DOMAIN"

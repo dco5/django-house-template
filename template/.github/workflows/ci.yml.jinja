@@ -31,6 +31,8 @@ jobs:
       - run: uv sync --locked --all-groups
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+      - name: Architecture layering contract
+        run: PYTHONPATH=src uv run lint-imports
       - run: uv run mypy src/ || true  # advisory until the codebase is fully typed
       - name: Check for missing migrations
         run: cd src && uv run python manage.py makemigrations --check --dry-run

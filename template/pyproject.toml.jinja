@@ -42,6 +42,7 @@ dev = [
     "django-debug-toolbar>=5.0",
     "django-browser-reload>=1.18",
     "pre-commit>=4.0",
+    "import-linter>=2.1",
 {% if deploy_tier == "docker" %}
     "fabric>=3.2",
 {% endif %}
@@ -55,7 +56,10 @@ extend-exclude = ["**/migrations/*"]
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "TID", "DJ"]
 
-# Layered architecture enforcement — violations fail lint, not code review.
+# Layered architecture, first line of defense: instant in-editor feedback for
+# upward imports from data/. Per-file-ignores re-allow the banned modules in the
+# layers that may use them, so the full contract (e.g. domain must not import
+# interfaces) is enforced by import-linter below, not here.
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "{{ package_name }}.domain".msg = "data/ must not import domain/ (layering violation)"
 "{{ package_name }}.interfaces".msg = "data/ and domain/ must not import interfaces/ (layering violation)"
@@ -63,9 +67,20 @@ select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "TID", "DJ"]
 [tool.ruff.lint.per-file-ignores]
 "src/{{ package_name }}/domain/**" = ["TID251"]
 "src/{{ package_name }}/interfaces/**" = ["TID251"]
-"src/{{ package_name }}/contrib/**" = ["TID251"]
 "src/{{ package_name }}/tests/**" = ["TID251"]
 "src/config/**" = ["TID251"]
+
+# Layered architecture, full contract: interfaces -> domain -> data.
+# Run with `make lint` (PYTHONPATH=src uv run lint-imports); analysis is static,
+# so no Django settings are needed.
+[tool.importlinter]
+root_packages = ["{{ package_name }}"]
+
+[[tool.importlinter.contracts]]
+name = "Layers: interfaces may import domain and data; domain may import data; data imports neither"
+type = "layers"
+layers = ["interfaces", "domain", "data"]
+containers = ["{{ package_name }}"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"

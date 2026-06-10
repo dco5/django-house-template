@@ -13,12 +13,18 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
 
 COPY . .
+
+# Build-time-only env. collectstatic MUST run under production settings so the
+# whitenoise manifest (staticfiles.json) exists for the runtime storage backend;
+# values just satisfy production's fail-fast checks and are not baked into runtime.
+ENV DJANGO_SETTINGS_MODULE=config.settings.production \
+    SECRET_KEY=build-time-only-secret-key-for-collectstatic-not-used-at-runtime \
+    ALLOWED_HOSTS=build.invalid{% if use_api %} \
+    INTERNAL_API_TOKEN=build-time-only-not-used-at-runtime{% endif %}
 {% if css == "tailwind" %}
-ENV SECRET_KEY=build-time-only DJANGO_SETTINGS_MODULE=config.settings.test
-RUN cd src && uv run python manage.py tailwind build
+RUN cd src && uv run --no-dev python manage.py tailwind build
 {% endif %}
-RUN cd src && SECRET_KEY=build-time-only DJANGO_SETTINGS_MODULE=config.settings.test \
-    uv run python manage.py collectstatic --noinput
+RUN cd src && uv run --no-dev python manage.py collectstatic --noinput
 
 FROM python:3.13-slim
 

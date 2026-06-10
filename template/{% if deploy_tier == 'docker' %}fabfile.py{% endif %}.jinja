@@ -35,8 +35,7 @@ def deploy(c, branch="main"):  # noqa: ANN001, ANN201
 
 @task
 def status(c):  # noqa: ANN001, ANN201
-    with _conn().cd(PATH) as _:
-        _conn().run(f"cd {PATH} && {COMPOSE} ps")
+    _conn().run(f"cd {PATH} && {COMPOSE} ps")
 
 
 @task

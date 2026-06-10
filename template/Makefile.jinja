@@ -20,6 +20,7 @@ test-all:
 
 lint:
 	uv run ruff check .
+	PYTHONPATH=src uv run lint-imports
 
 format:
 	uv run ruff format .

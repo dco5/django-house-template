@@ -35,6 +35,39 @@ def test_portal_login_flow(client, user):
 
 
 @pytest.mark.django_db
+def test_login_rejects_external_next_url(client, user):
+    response = client.post(
+        reverse("portal:login"),
+        {
+            "username": user.username,
+            "password": "testpass123!",
+            "next": "https://evil.example.com/phish",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse("portal:dashboard")
+
+
+@pytest.mark.django_db
+def test_csp_header_emitted_when_configured(client, settings):
+    from django.utils.csp import CSP
+
+    settings.SECURE_CSP = {"default-src": [CSP.SELF]}
+    response = client.get(reverse("healthz"))
+    assert response["Content-Security-Policy"] == "default-src 'self'"
+
+
+def test_backoffice_admin_autodiscovered():
+    from django.contrib import admin
+
+    from {{ package_name }}.data.auditlog.models import AuditLog
+    from {{ package_name }}.data.users.models import User
+
+    assert User in admin.site._registry
+    assert AuditLog in admin.site._registry
+
+
+@pytest.mark.django_db
 def test_audit_log_records_writes(user):
     log = auditlog_ops.record_audit(
         action="user.created",

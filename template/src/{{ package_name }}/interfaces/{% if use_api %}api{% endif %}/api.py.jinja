@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import secrets
+
 from django.conf import settings
 from django.http import HttpRequest
 from ninja import NinjaAPI
@@ -8,7 +10,7 @@ from ninja.security import HttpBearer
 
 class ApiKeyAuth(HttpBearer):
     def authenticate(self, request: HttpRequest, token: str) -> str | None:
-        if token == settings.INTERNAL_API_TOKEN:
+        if secrets.compare_digest(token, settings.INTERNAL_API_TOKEN):
             return token
         return None
 

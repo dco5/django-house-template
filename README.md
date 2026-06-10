@@ -7,7 +7,8 @@ Copier template encoding the house Django architecture distilled from three prod
 ## What you get
 
 - **Django 6.0 / Python 3.13**, managed with **uv** (`uv.lock`, PEP 735 dependency groups)
-- **Layered architecture, mechanically enforced by ruff** (TID251 banned imports):
+- **Layered architecture, mechanically enforced** — ruff TID251 for instant in-editor feedback,
+  [import-linter](https://import-linter.readthedocs.io) for the full layers contract in `make lint` / CI:
   `data/` (thin models) → `domain/` (operations / queries / processes) → `interfaces/` (portal / api / backoffice / tasks)
 - **Audit-first writes**: every domain operation takes `performed_by` + `action_source`; ready-made immutable `AuditLog`
 - **Custom User model** from day one, argon2 password hashing (cookiecutter-django lineage)
@@ -15,7 +16,9 @@ Copier template encoding the house Django architecture distilled from three prod
 - Optional: **django-ninja** API, **Celery + Redis + beat**, **Tailwind + DaisyUI** (django-tailwind-cli), **Sentry**
 - **Admin autodiscovery** into `interfaces/backoffice/` — admin never lives in data apps
 - **pytest + factory-boy** (unit / integration markers), pre-commit (ruff check + format), mypy + django-stubs
-- **CI**: GitHub Actions — ruff, mypy, `makemigrations --check`, `check --deploy`, pytest (with Postgres service)
+- **Security**: Django 6.0 native CSP wired (middleware + production policy), HSTS, secure cookies,
+  open-redirect-safe portal login, fail-fast production checks (SECRET_KEY length, API token)
+- **CI**: GitHub Actions — ruff, import-linter, mypy, `makemigrations --check`, `check`, pytest (with Postgres service)
 - **Deploy tiers**: Docker compose + fabfile (default) or VPS systemd + gunicorn + nginx (`deploy.sh`)
 - **CLAUDE.md / AGENTS.md** agent-workflow conventions baked in
 
@@ -48,7 +51,7 @@ Answers are stored in `.copier-answers.yml`; the template is versioned with git 
 | `domain/` | `data/` | `operations.py` (writes, `@transaction.atomic`, `performed_by` + `action_source`), `queries.py` (reads, never raise), `processes.py` (workflows) |
 | `interfaces/` | everything | portal views (never write ORM directly), ninja API, backoffice admin, Celery task wrappers |
 
-Violations fail `ruff check` — not code review.
+Violations fail `make lint` (ruff + import-linter) — not code review.
 
 See the full handbook for the reasoning behind every decision.
 

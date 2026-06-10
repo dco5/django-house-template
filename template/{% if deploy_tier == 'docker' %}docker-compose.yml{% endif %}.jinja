@@ -30,6 +30,8 @@ services:
 {% endif %}    env_file: .env
     volumes:
       - .:/code
+      # keep the image's Linux venv; the bind mount would shadow it with the host's
+      - /code/.venv
     ports:
       - "8000:8000"
 {% if database == "postgres" %}    depends_on:
@@ -47,6 +49,8 @@ services:
 {% endif %}      REDIS_URL: redis://redis:6379/0
     volumes:
       - .:/code
+      # keep the image's Linux venv; the bind mount would shadow it with the host's
+      - /code/.venv
     depends_on:
       - redis
 {% if database == "postgres" %}      - db
@@ -62,6 +66,8 @@ services:
 {% endif %}      REDIS_URL: redis://redis:6379/0
     volumes:
       - .:/code
+      # keep the image's Linux venv; the bind mount would shadow it with the host's
+      - /code/.venv
     depends_on:
       - redis
 

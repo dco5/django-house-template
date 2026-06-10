@@ -1,0 +1,27 @@
+from __future__ import annotations
+
+import pkgutil
+from importlib import import_module, util
+
+from django.apps import AppConfig
+
+
+class BackofficeConfig(AppConfig):
+    """Backoffice admin autodiscovery.
+
+    Admin classes live in interfaces/backoffice/<context>/admin.py — never in
+    data apps. New bounded contexts need no INSTALLED_APPS entry: any package
+    under backoffice/ with an admin.py is imported (and thereby registered) here.
+    """
+
+    name = "{{ package_name }}.interfaces.backoffice"
+    label = "backoffice"
+
+    def ready(self) -> None:
+        package = import_module(self.name)
+        for module_info in pkgutil.iter_modules(package.__path__):
+            if not module_info.ispkg:
+                continue
+            admin_module = f"{self.name}.{module_info.name}.admin"
+            if util.find_spec(admin_module) is not None:
+                import_module(admin_module)
